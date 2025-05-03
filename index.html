@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Affirmation Station - Unique Positive Reinforcement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ecfdf5; /* Light green background */
+            background-image: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 50%, #a7f3d0 100%); /* Green gradient */
+        }
+        /* Custom scrollbar for affirmation feed */
+        #affirmationFeedArea::-webkit-scrollbar { width: 6px; }
+        #affirmationFeedArea::-webkit-scrollbar-track { background: #d1fae5; border-radius: 10px; }
+        #affirmationFeedArea::-webkit-scrollbar-thumb { background: #34d399; border-radius: 10px; } /* Emerald color */
+        #affirmationFeedArea::-webkit-scrollbar-thumb:hover { background: #10b981; } /* Darker Emerald */
+
+        textarea:focus, button:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3); /* Emerald focus ring */
+        }
+        #affirmButton {
+            transition: background-color 0.3s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease;
+        }
+        #affirmButton:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+         #affirmButton:active {
+            transform: translateY(0px);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        }
+        /* Style for the single positive acknowledgement message (now one of the 500 affirmations) */
+        .positive-acknowledgement {
+             padding: 8px 16px;
+             font-size: 1rem;
+             border-radius: 6px;
+             display: inline-block;
+             background-color: #a7f3d0; /* Light Emerald */
+             color: #065f46; /* Dark Emerald text */
+             animation: fadeInMessage 0.5s ease-out;
+        }
+        /* Simple fade-in animation */
+        @keyframes fadeInMessage {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+         /* Style for affirmation feed items (user's personalized affirmations) */
+        .affirmation-item {
+            border-left: 4px solid #34d399; /* Emerald border */
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            position: relative;
+            overflow: hidden;
+             animation: fadeInItem 0.5s ease-out; /* Animation for new items */
+        }
+         @keyframes fadeInItem {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .affirmation-item:hover {
+            background-color: #d1fae5; /* Lighter Emerald */
+            border-left-color: #10b981; /* Darker Emerald */
+        }
+        /* Style for the remove button */
+        .remove-btn {
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .remove-btn:hover {
+            background-color: #ef4444; /* Red background on hover */
+            color: white;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
+
+    <div class="bg-white p-6 sm:p-8 lg:p-10 rounded-xl shadow-2xl w-full max-w-3xl border border-gray-200">
+        <header class="text-center mb-8 border-b border-gray-200 pb-6">
+            <h1 class="text-3xl sm:text-4xl font-bold text-emerald-700 tracking-tight">Affirmation Station</h1>
+            <p class="text-gray-500 mt-3 text-lg">Reinforce Your Positive Thoughts</p>
+        </header>
+
+        <section class="mb-8">
+            <label for="affirmationInput" class="block text-sm font-medium text-gray-700 mb-2">Enter your positive affirmation:</label>
+            <textarea id="affirmationInput" rows="5" class="w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:border-emerald-500 focus:ring-emerald-500 transition duration-150 ease-in-out text-gray-700 placeholder-gray-400"
+                      placeholder="e.g., I am capable and strong. (Shift+Enter for new line)"></textarea>
+
+            <div id="acknowledgementArea" class="mt-4 text-center font-medium h-16 flex items-center justify-center border border-gray-200 rounded-md p-3 bg-gray-50">
+                 <p id="ackPlaceholder" class="text-gray-400 italic">Your positive acknowledgement will appear here.</p>
+            </div>
+
+            <button id="affirmButton" class="mt-5 w-full bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">
+                Add Affirmation
+            </button>
+        </section>
+
+        <section>
+            <h2 class="text-2xl font-semibold text-gray-800 mb-5">My Saved Affirmations</h2>
+             <div id="affirmationFeedArea" class="space-y-4 max-h-[300px] overflow-y-auto pr-3 -mr-3 border border-gray-200 rounded-md p-4 bg-gray-50">
+                <p id="noAffirmationsMessage" class="text-gray-500 italic text-center">No affirmations saved yet.</p>
+                </div>
+        </section>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const affirmationInput = document.getElementById('affirmationInput');
+        const affirmButton = document.getElementById('affirmButton');
+        const acknowledgementArea = document.getElementById('acknowledgementArea');
+        const ackPlaceholder = document.getElementById('ackPlaceholder');
+        const affirmationFeedArea = document.getElementById('affirmationFeedArea');
+        const noAffirmationsMessage = document.getElementById('noAffirmationsMessage');
+
+        // Local Storage Keys
+        const AFFIRMATIONS_STORAGE_KEY = 'positiveAffirmations_v3'; // Key for user's saved affirmations
+        const AVAILABLE_PREFIXES_KEY = 'availablePrefixes_v1';      // Key for available personalization prefixes state
+        const AVAILABLE_AFFIRMATIONS_KEY = 'availableAffirmationsPool_v1'; // Key for available 500 affirmations pool state
+
+        // --- Pool of 500 Unique Affirmations (for the acknowledgement box) ---
+        const fullAffirmationPool = [
+            "I am worthy of love and belonging just as I am.",
+            "I release all limiting beliefs and embrace my full potential.",
+            "My body is healthy, strong, and vibrant.",
+            "I attract abundance and prosperity into my life with ease.",
+            "I am filled with peace, calm, and serenity.",
+            "Every day, in every way, I am getting better and better.",
+            "I trust the process of life and know that everything happens for my highest good.",
+            "I am confident, capable, and resilient.",
+            "My heart is open to giving and receiving love.",
+            "I am grateful for all the blessings in my life, big and small.",
+            "I choose happiness and joy in every moment.",
+            "I am a powerful creator of my own reality.",
+            "My mind is clear, focused, and sharp.",
+            "I forgive myself and others freely and completely.",
+            "I am surrounded by positive, supportive, and loving people.",
+            "I embrace challenges as opportunities for growth.",
+            "My intuition guides me wisely and accurately.",
+            "I am financially abundant and money flows to me easily.",
+            "I radiate positive energy and attract positive experiences.",
+            "I am deserving of success and achieve my goals effortlessly.",
+            "I treat myself with kindness, compassion, and respect.",
+            "My relationships are harmonious, loving, and fulfilling.",
+            "I am connected to the infinite wisdom of the universe.",
+            "I let go of fear and step into my power.",
+            "My creativity flows freely and abundantly.",
+            "I am perfectly healthy in mind, body, and spirit.",
+            "I attract opportunities that align with my purpose.",
+            "I am whole, complete, and perfect just the way I am.",
+            "I celebrate my unique talents and gifts.",
+            "I am grounded, centered, and balanced.",
+            "My future is bright, exciting, and full of possibilities.",
+            "I release the past and live fully in the present moment.",
+            "I am a magnet for miracles and positive synchronicities.",
+            "I speak my truth with confidence and clarity.",
+            "I nourish my body with healthy foods and activities.",
+            "I am worthy of all the good things life has to offer.",
+            "My work is fulfilling, meaningful, and makes a difference.",
+            "I handle stressful situations with grace and ease.",
+            "I am always learning, growing, and evolving.",
+            "I attract loving and supportive friendships.",
+            "I am open to receiving unexpected blessings.",
+            "My energy is high, vibrant, and contagious.",
+            "I trust my inner guidance system completely.",
+            "I am financially secure and free.",
+            "I see beauty and goodness all around me.",
+            "I am brave, courageous, and bold.",
+            "My sleep is deep, restful, and rejuvenating.",
+            "I easily overcome any obstacles in my path.",
+            "I am a source of inspiration and positivity to others.",
+            "I love and accept myself unconditionally.",
+            "I attract my ideal partner and loving relationship.",
+            "I am aligned with my soul's purpose.",
+            "My thoughts create my reality, so I choose positive thoughts.",
+            "I am patient, persistent, and determined.",
+            "I release all comparison and celebrate my own journey.",
+            "My life is filled with adventure, fun, and laughter.",
+            "I am deeply connected to nature and its healing energy.",
+            "I make wise and beneficial decisions.",
+            "I am worthy of rest, relaxation, and self-care.",
+            "Abundance flows through me in all forms.",
+            "I am resilient and bounce back quickly from setbacks.",
+            "My communication skills are clear, effective, and compassionate.",
+            "I am open to new experiences and perspectives.",
+            "I let go of the need for approval from others.",
+            "My home is a peaceful sanctuary.",
+            "I am surrounded by protective and loving energy.",
+            "I attract success in all my endeavors.",
+            "I am grateful for my body's ability to heal.",
+            "I easily manifest my desires and intentions.",
+            "I am a beacon of light and love in the world.",
+            "I trust that I am always in the right place at the right time.",
+            "My financial situation improves every day.",
+            "I am filled with boundless energy and vitality.",
+            "I release negativity and embrace positivity.",
+            "I am worthy of achieving my dreams.",
+            "My relationships are built on trust, respect, and love.",
+            "I am guided and protected by the universe.",
+            "I embrace change with courage and optimism.",
+            "My creative ideas are valuable and inspiring.",
+            "I honor my body's needs and listen to its wisdom.",
+            "I attract helpful people and resources easily.",
+            "I am unique, special, and valuable.",
+            "I find joy in the simple pleasures of life.",
+            "I am calm and centered even amidst chaos.",
+            "My life is a beautiful reflection of my inner state.",
+            "I release all worries about the future.",
+            "I am a powerful manifestor.",
+            "I express myself authentically and freely.",
+            "I make healthy choices that support my well-being.",
+            "I deserve happiness, love, and success.",
+            "My career is thriving and brings me joy.",
+            "I navigate challenges with wisdom and strength.",
+            "I am constantly expanding my knowledge and skills.",
+            "My friendships are deep, meaningful, and supportive.",
+            "I am open and receptive to all good things.",
+            "My energy field is clear, strong, and protected.",
+            "I trust my ability to create the life I desire.",
+            "I am financially prosperous and generous.",
+            "I appreciate the beauty within and around me.",
+            "I am fearless in pursuing my passions.",
+            "I wake up each morning feeling refreshed and energized.",
+            "I overcome challenges with ease and grace.",
+            "I inspire others through my actions and words.",
+            "My self-love grows stronger every day.",
+            "I attract a relationship based on mutual respect and adoration.",
+            "I am living my life's purpose with passion.",
+            "My positive thoughts create positive outcomes.",
+            "I am focused, disciplined, and achieve my goals.",
+            "I celebrate the success of others genuinely.",
+            "My life is an exciting adventure unfolding perfectly.",
+            "I feel a deep sense of connection to all living things.",
+            "I make decisions that align with my values.",
+            "I prioritize my well-being and practice self-care daily.",
+            "Wealth and abundance are my birthright.",
+            "I bounce back from challenges stronger than before.",
+            "I communicate my needs and boundaries clearly.",
+            "I welcome new opportunities for learning and growth.",
+            "My self-worth is inherent and does not depend on external validation.",
+            "My living space supports my peace and happiness.",
+            "I am divinely guided and protected always.",
+            "Success comes to me easily and frequently.",
+            "My body heals quickly and efficiently.",
+            "I manifest my dreams into reality effortlessly.",
+            "I radiate love, kindness, and compassion.",
+            "I trust the timing of my life perfectly.",
+            "Money flows to me from expected and unexpected sources.",
+            "I am full of energy and enthusiasm for life.",
+            "I choose thoughts that uplift and empower me.",
+            "I am capable of achieving anything I set my mind to.",
+            "My relationships are filled with joy, laughter, and support.",
+            "The universe conspires in my favor.",
+            "I embrace transitions with flexibility and trust.",
+            "My imagination is a powerful tool for creation.",
+            "I listen to my body and give it what it needs.",
+            "I attract mentors and guides who support my journey.",
+            "I honor my unique path and journey.",
+            "I find happiness in the present moment.",
+            "I maintain inner peace regardless of external circumstances.",
+            "My outer world reflects my inner harmony.",
+            "I release anxiety and embrace peace.",
+            "My manifesting abilities are strong and effective.",
+            "I express my creativity in fulfilling ways.",
+            "I choose health and vitality every day.",
+            "I am worthy of receiving abundance in all areas of my life.",
+            "My career path aligns perfectly with my passions and skills.",
+            "I face challenges with a calm and solution-oriented mindset.",
+            "I am a lifelong learner, open to new wisdom.",
+            "I cultivate friendships that nourish my soul.",
+            "I am a grateful receiver of life's gifts.",
+            "My aura is bright, clear, and vibrant.",
+            "I trust my intuition to lead me to my highest good.",
+            "I manage my finances wisely and responsibly.",
+            "I recognize and appreciate beauty everywhere.",
+            "I step outside my comfort zone with courage.",
+            "My sleep patterns are healthy and restorative.",
+            "I transform obstacles into stepping stones.",
+            "I uplift others with my positive attitude.",
+            "I deeply love and cherish myself.",
+            "My ideal relationship is manifesting now.",
+            "I am fulfilling my destiny with joy.",
+            "My mindset is focused on abundance and success.",
+            "I achieve my objectives with focus and determination.",
+            "I am genuinely happy for the achievements of others.",
+            "Life offers me wonderful surprises daily.",
+            "My connection with the Earth grounds and energizes me.",
+            "My choices reflect my highest self.",
+            "Self-care is a priority, not a luxury.",
+            "I am open to receiving limitless wealth.",
+            "I learn valuable lessons from every experience.",
+            "I communicate assertively and respectfully.",
+            "I seek out experiences that expand my horizons.",
+            "I approve of myself completely.",
+            "My home environment is clean, organized, and peaceful.",
+            "Divine protection surrounds me at all times.",
+            "I define success on my own terms and achieve it.",
+            "My body knows how to achieve perfect health.",
+            "My thoughts align with my desires easily.",
+            "I am a channel for love and light.",
+            "I trust that everything unfolds in divine timing.",
+            "I am a wise steward of my financial resources.",
+            "My vitality and energy levels are consistently high.",
+            "I consciously replace negative thoughts with positive ones.",
+            "I possess the skills and talents needed to succeed.",
+            "My relationships bring out the best in me and others.",
+            "The universe supports my dreams and goals.",
+            "I adapt to change gracefully and easily.",
+            "My creative potential is limitless.",
+            "I make choices that honor my physical well-being.",
+            "I attract supportive and knowledgeable mentors.",
+            "I embrace my individuality with pride.",
+            "I savor the richness of the present moment.",
+            "My inner peace is unshakable.",
+            "My environment reflects my inner state of abundance.",
+            "I release worry and trust the flow of life.",
+            "I am skilled at manifesting my intentions quickly.",
+            "My creative expression brings me and others joy.",
+            "I am committed to my health and wellness journey.",
+            "I deserve financial freedom and security.",
+            "My work makes a positive impact on the world.",
+            "I handle challenges with resilience and creativity.",
+            "I am always expanding my understanding of the world.",
+            "I attract friendships based on authenticity and mutual support.",
+            "I gratefully receive compliments and assistance.",
+            "My energy attracts positive people and situations.",
+            "I trust my inner wisdom above all else.",
+            "I am confident in my ability to manage money well.",
+            "I find beauty in unexpected places.",
+            "I bravely pursue opportunities for growth.",
+            "I enjoy peaceful and uninterrupted sleep.",
+            "Every challenge makes me stronger and wiser.",
+            "My positivity is a gift I share with the world.",
+            "My relationship with myself is loving and nurturing.",
+            "Love flows to me easily and abundantly.",
+            "I live my purpose with passion and dedication daily.",
+            "My thoughts are aligned with the frequency of abundance.",
+            "I take consistent action towards my goals.",
+            "I celebrate my progress, no matter how small.",
+            "My life is filled with magic and wonder.",
+            "I feel grounded and connected to the Earth's energy.",
+            "I make decisions that honor my soul's path.",
+            "I schedule regular time for relaxation and rejuvenation.",
+            "I welcome increasing financial abundance into my life.",
+            "I view setbacks as opportunities for redirection.",
+            "I express my boundaries with confidence and kindness.",
+            "I am excited about the possibilities that lie ahead.",
+            "My self-worth is non-negotiable.",
+            "My home is a reflection of my inner peace and joy.",
+            "I am safe, protected, and secure.",
+            "I attract successful outcomes effortlessly.",
+            "My body is a remarkable vessel of health and vitality.",
+            "I easily attract the resources needed to achieve my goals.",
+            "I am a unique expression of divine creation.",
+            "I find joy and gratitude in everyday moments.",
+            "My mind is calm, clear, and focused.",
+            "My external reality aligns with my positive inner vision.",
+            "I trust in the universe's perfect plan for me.",
+            "I am a magnet for financial opportunities.",
+            "I radiate health, energy, and well-being.",
+            "I choose empowering beliefs that serve my highest good.",
+            "I am fully equipped to handle any situation.",
+            "My relationships are sources of strength and happiness.",
+            "Divine guidance flows to me constantly.",
+            "I embrace change as a catalyst for positive transformation.",
+            "My creativity inspires and uplifts me.",
+            "I prioritize activities that nourish my body and soul.",
+            "I attract mentors who accelerate my growth.",
+            "I celebrate my unique qualities and strengths.",
+            "I live fully and consciously in the present.",
+            "My inner sanctuary of peace is always accessible.",
+            "My surroundings support my goals and well-being.",
+            "I release fear and choose love in every situation.",
+            "My manifestations appear in perfect timing.",
+            "I express my authentic self without hesitation.",
+            "I am dedicated to maintaining optimal health.",
+            "I am worthy of receiving help and support.",
+            "My career provides me with fulfillment and abundance.",
+            "I approach challenges with curiosity and optimism.",
+            "I am open to receiving wisdom from all sources.",
+            "I attract friends who uplift and inspire me.",
+            "I receive abundance with an open heart and gratitude.",
+            "My energy is clear, balanced, and protected.",
+            "I trust my ability to navigate life's journey successfully.",
+            "I am a responsible and successful money manager.",
+            "I perceive beauty in myself, others, and the world.",
+            "I confidently step into new and exciting territories.",
+            "My sleep is a time of healing and integration.",
+            "I turn obstacles into advantages.",
+            "My positive outlook brightens the lives of others.",
+            "I practice self-compassion daily.",
+            "I am ready for a deep, committed, loving relationship.",
+            "I am aligned with the flow of my life's purpose.",
+            "My thoughts naturally gravitate towards abundance.",
+            "I break down large goals into manageable steps.",
+            "I acknowledge and appreciate my accomplishments.",
+            "My life is a testament to the power of positivity.",
+            "I am rooted and stable like a strong tree.",
+            "My actions are guided by my inner truth.",
+            "I honor my need for rest and renewal.",
+            "Unexpected income flows to me regularly.",
+            "I learn and grow from every life experience.",
+            "I communicate my truth effectively and lovingly.",
+            "I embrace opportunities that challenge and excite me.",
+            "I value myself irrespective of others' opinions.",
+            "My home is filled with positive, loving energy.",
+            "I walk my path with divine protection and guidance.",
+            "I achieve success with integrity and joy.",
+            "My body regenerates and rejuvenates itself constantly.",
+            "The universe provides all I need to fulfill my desires.",
+            "I am a unique and valuable contribution to the world.",
+            "I find deep gratitude in the present moment's gifts.",
+            "My mind is a peaceful haven.",
+            "My environment supports my highest potential.",
+            "I release control and trust the unfolding of life.",
+            "I manifest my intentions with clarity and focus.",
+            "My creative expression is authentic and fulfilling.",
+            "I make choices that promote longevity and vitality.",
+            "I am deserving of financial ease and comfort.",
+            "My work allows me to share my unique gifts.",
+            "I see challenges as puzzles to be solved creatively.",
+            "I gain wisdom from every interaction and experience.",
+            "My friendships are built on mutual trust and understanding.",
+            "I graciously accept all the good the universe offers.",
+            "My energetic boundaries are strong and clear.",
+            "I have complete faith in my inner guidance.",
+            "I attract wealth and manage it wisely for the good of all.",
+            "My appreciation for beauty deepens every day.",
+            "I embrace the unknown with excitement and curiosity.",
+            "I wake up feeling grateful and ready for the day.",
+            "I find creative solutions to any problem.",
+            "My presence brings joy and positivity to others.",
+            "I forgive myself easily and learn from mistakes.",
+            "I attract love in all its forms into my life.",
+            "I am confidently walking my destined path.",
+            "My belief in abundance creates an abundant reality.",
+            "I consistently work towards my most important goals.",
+            "I celebrate my uniqueness and individuality.",
+            "Life is full of delightful possibilities.",
+            "I feel safe and secure in my connection to the Earth.",
+            "My decisions empower me and align with my truth.",
+            "I allow myself ample time for rest and play.",
+            "Financial opportunities find me easily and often.",
+            "Every experience contributes to my wisdom and growth.",
+            "I express myself clearly, honestly, and kindly.",
+            "I say yes to adventures that nourish my soul.",
+            "My opinion of myself is the only one that matters.",
+            "My home is my peaceful retreat from the world.",
+            "I am always guided towards my highest good.",
+            "Success is a natural outcome of my efforts.",
+            "My body is intelligent and knows how to heal.",
+            "I attract the perfect people and circumstances to achieve my goals.",
+            "I value my contributions and unique perspective.",
+            "I practice gratitude throughout my day.",
+            "My mind is calm and thoughts flow peacefully.",
+            "My surroundings reflect my inner state of peace and order.",
+            "I surrender outcomes and trust the divine plan.",
+            "I am a powerful co-creator with the universe.",
+            "My creativity flows effortlessly and joyfully.",
+            "I invest in my health and well-being daily.",
+            "I am comfortable receiving large sums of money.",
+            "My career evolves in exciting and fulfilling ways.",
+            "I approach difficulties with a positive and resourceful attitude.",
+            "I am open to learning from everyone I meet.",
+            "I nurture my friendships with presence and care.",
+            "I am worthy of receiving unexpected gifts and blessings.",
+            "My energy field repels negativity and attracts positivity.",
+            "I trust the wisdom that resides within me.",
+            "I make financial decisions that support my long-term security.",
+            "I see the inherent beauty in all of creation.",
+            "I embrace challenges that help me grow stronger.",
+            "My sleep is deeply restorative, preparing me for a great day.",
+            "I view obstacles as opportunities in disguise.",
+            "I share my positivity generously with those around me.",
+            "I treat myself with the same kindness I offer others.",
+            "My heart is open and ready for true love.",
+            "I am living in alignment with my soul's calling.",
+            "My abundant thinking creates endless opportunities.",
+            "I am disciplined and committed to my vision.",
+            "I honor my journey and all that I have become.",
+            "My life is filled with joy, purpose, and connection.",
+            "I am securely anchored to the present moment.",
+            "My choices are guided by wisdom and intuition.",
+            "I create space in my life for relaxation and fun.",
+            "Wealth flows to me easily, frequently, and abundantly.",
+            "I integrate the lessons from my past with grace.",
+            "My words have the power to heal and inspire.",
+            "I seek experiences that broaden my understanding.",
+            "I release the need to please everyone.",
+            "My home radiates warmth, comfort, and serenity.",
+            "I trust that I am always supported by the universe.",
+            "I celebrate every success, big or small.",
+            "My body functions optimally and effortlessly.",
+            "The universe orchestrates perfect synchronicities for me.",
+            "I recognize my inherent worth and value.",
+            "Gratitude fills my heart and expands my joy.",
+            "My thoughts are peaceful, positive, and constructive.",
+            "I create an environment that supports my growth and happiness.",
+            "I trust the flow and timing of life's events.",
+            "My intentions manifest rapidly and easily.",
+            "I allow my creative genius to express itself fully.",
+            "I make my health a top priority every single day.",
+            "I am open and receptive to receiving more money.",
+            "My work is a joyful expression of my talents.",
+            "I find strength and resilience in challenging times.",
+            "I value the wisdom gained through experience.",
+            "My friendships enrich my life immeasurably.",
+            "I expect and welcome miracles into my life.",
+            "My energy is vibrant and attracts positive attention.",
+            "My intuition is my most reliable guide.",
+            "I am a confident and capable manager of my finances.",
+            "I find wonder and awe in the natural world.",
+            "I grow more confident with every challenge I overcome.",
+            "I awaken each day with optimism and enthusiasm.",
+            "I am resourceful and find solutions easily.",
+            "My positive energy uplifts everyone I encounter.",
+            "I am gentle and forgiving with myself.",
+            "Love surrounds me and flows through me.",
+            "I am passionately pursuing my life's work.",
+            "My mind is attuned to the frequency of prosperity.",
+            "I take consistent, inspired action towards my dreams.",
+            "I am proud of the person I am becoming.",
+            "My life is a beautiful tapestry of experiences.",
+            "I am grounded in my truth and values.",
+            "My decisions create a future I am excited about.",
+            "I balance productivity with essential rest.",
+            "Abundance in all forms is drawn to me.",
+            "I release the past with love and gratitude.",
+            "My communication fosters connection and understanding.",
+            "I embrace learning as a lifelong adventure.",
+            "I accept myself fully, including my imperfections.",
+            "My home is a space of beauty, peace, and inspiration.",
+            "I am eternally supported by divine love.",
+            "I define my own success and live it fully.",
+            "My body is a temple, and I treat it with reverence.",
+            "Everything I need comes to me at the perfect time.",
+            "I honor my unique gifts and share them generously.",
+            "My heart overflows with gratitude for life itself.",
+            "I cultivate inner peace through mindfulness and presence.",
+            "I design my environment to reflect my aspirations.",
+            "I trust the universe has my back always.",
+            "I manifest my desires through clear intention and belief.",
+            "My creativity knows no bounds.",
+            "I am vibrantly healthy and full of life.",
+            "I am worthy of wealth and financial stability.",
+            "My career brings me immense satisfaction and reward.",
+            "I possess the inner strength to overcome any adversity.",
+            "I learn valuable lessons from every person I meet.",
+            "My friendships are genuine, supportive, and lasting.",
+            "I am open to receiving guidance from unexpected sources.",
+            "My energy is magnetic to positive opportunities.",
+            "I trust the quiet wisdom of my heart.",
+            "I handle money with wisdom, gratitude, and responsibility.",
+            "I am captivated by the beauty of everyday life.",
+            "I face new situations with confidence and ease.",
+            "My sleep is profoundly peaceful and restorative.",
+            "I transform challenges into fuel for my growth.",
+            "My optimism inspires hope in others.",
+            "I embrace my journey with self-love and acceptance.",
+            "I am attracting my soulmate relationship now.",
+            "I live each day aligned with my core values.",
+            "My thoughts create a prosperous and joyful reality.",
+            "I am motivated, focused, and achieve results.",
+            "I celebrate who I am right now in this moment.",
+            "My life unfolds with grace, ease, and beauty.",
+            "I feel centered and balanced in my daily life.",
+            "My actions are guided by love and wisdom.",
+            "I prioritize activities that bring me joy and peace.",
+            "Money flows to me from multiple sources consistently.",
+            "I integrate wisdom from past experiences effectively.",
+            "I listen actively and communicate compassionately.",
+            "I am curious and open to discovering new things.",
+            "My self-acceptance is unwavering.",
+            "My home is a haven that nurtures my spirit.",
+            "I am held and supported by a loving universe.",
+            "I achieve my goals with joy and enthusiasm.",
+            "My body is strong, flexible, and resilient.",
+            "The universe provides abundant resources for my needs.",
+            "I share my unique talents confidently with the world.",
+            "Gratitude is my natural state of being.",
+            "I maintain a calm and peaceful state of mind.",
+            "I create surroundings that inspire and uplift me.",
+            "I trust the divine intelligence guiding my life.",
+            "My positive beliefs shape my wonderful reality.",
+            "I am a wellspring of creative ideas and solutions.",
+            "I make choices that enhance my physical and mental health.",
+            "I welcome financial abundance with open arms.",
+            "My work is deeply fulfilling and financially rewarding.",
+            "I navigate life's ups and downs with grace.",
+            "Every experience offers an opportunity for learning.",
+            "I cherish my supportive and loving friendships.",
+            "I am receptive to miracles and blessings daily.",
+            "My positive energy attracts wonderful people into my life.",
+            "I honor my intuition and act upon its guidance.",
+            "I am financially empowered and make wise choices.",
+            "I find beauty in simplicity and complexity alike.",
+            "I approach new challenges with a sense of adventure.",
+            "I drift into sleep easily and wake up revitalized.",
+            "Obstacles melt away before my focused intention.",
+            "My enthusiasm for life is infectious.",
+            "I am kind and patient with myself during growth.",
+            "I am worthy and deserving of unconditional love.",
+            "I am living my purpose with clarity and conviction.",
+            "My mindset is geared towards limitless possibilities.",
+            "I take purposeful steps towards my vision daily.",
+            "I love the person I am and the person I am becoming.",
+            "My life is a beautiful expression of divine love.",
+            "I am grounded in the present, peaceful and secure.",
+            "My choices create positive ripples in the world.",
+            "I make time for activities that restore my energy.",
+            "I am a magnet for wealth, health, and happiness.",
+            "I learn from the past without dwelling on it.",
+            "My communication builds bridges and fosters harmony.",
+            "I embrace new knowledge with an open mind.",
+            "I accept all parts of myself with love.",
+            "My home reflects my inner harmony and beauty.",
+            "I trust that I am always safe and divinely protected.",
+            "I welcome success and celebrate my achievements.",
+            "My body is a miracle of perfect functioning.",
+            "All the resources I need are available to me.",
+            "My unique presence makes a positive difference.",
+            "I am deeply grateful for this precious life."
+        ]
+        // --- Logic for Unique Personalization Prefixes ---
+       const fullPersonalizationPrefixPool = [
+  // Original list
+  "I affirm that", "I embrace that", "It is true that", "I believe that",
+  "I am choosing to feel that", "My reality is that", "I know that",
+  "I am grateful that", "I accept that", "I declare that", "I embody that",
+  "I welcome that", "I attract that", "I manifest that",
+
+  // First additional list
+  "I trust that", "I allow that", "I acknowledge that", "I recognize that",
+  "I permit that", "I receive that", "I appreciate that", "I decide that",
+  "I create that", "I generate that", "I cultivate that", "I invite that",
+  "I feel that", "I sense that", "I align with that", "I resonate with that",
+  "I am worthy of that", "I deserve that", "It is my truth that",
+  "It is clear that", "It is certain that", "I understand that",
+  "I realize that", "I confirm that", "I experience that",
+
+  // Large expansion (adding many more)
+  "I decree that", "I command that", "I envision that", "I perceive that",
+  "I witness that", "I hold space for that", "I make room for that", "I am open to that",
+  "I surrender to that", "I release resistance to that", "I flow with that", "I harmonize with that",
+  "I celebrate that", "I honor that", "I value that", "I treasure that",
+  "I nurture that", "I foster that", "I grow that", "I amplify that",
+  "I magnify that", "I radiate that", "I project that", "I express that",
+  "I live that", "I breathe that", "I become that", "My intention is that",
+  "My focus is that", "My desire is that", "My will is that", "My choice is that",
+  "My conviction is that", "My knowing is that", "My perception is that",
+  "My understanding includes that", "My reality includes that", "My world contains that",
+  "My experience confirms that", "My heart knows that", "My soul accepts that",
+  "My spirit affirms that", "My being resonates with that", "It is possible that",
+  "It is likely that", "It is destined that", "It is written that", "It is my path that",
+  "It is my destiny that", "It is natural that", "It is effortless that",
+  "It is simple that", "It is easy that", "It is joyful that", "It is exciting that",
+  "I am thrilled that", "I am delighted that", "I am pleased that", "I am content that",
+  "I am aware that", "I am conscious that", "I am mindful that", "I am present to that",
+  "I give thanks for that", "I am thankful that", "My gratitude includes that",
+  "I choose to see that", "I choose to know that", "I choose to believe that",
+  "I choose to accept that", "I choose to welcome that", "I choose to create that",
+  "I am now creating that", "I am now manifesting that", "I am now attracting that",
+  "I am now receiving that", "I am now allowing that", "I am now embodying that",
+  "I am now living that", "The truth remains that", "The fact is that",
+  "Undeniably,", "Unquestionably,", "Without doubt,", "Certainly,", "Surely,",
+  "I am certain that", "I am sure that", "I am positive that", "I have faith that",
+  "I maintain that", "I sustain that", "I uphold that", "I authorize that",
+  "I empower that", "I unleash that", "I set free that", "I activate that",
+  "I integrate that", "I synthesize that", "I build upon that", "I expand upon that",
+  "I deepen my understanding that", "I enrich my experience that", "I enhance my reality that",
+  "I beautify my world that", "I simplify my life that", "I elevate my perspective that",
+  "I am capable of ensuring that", "I am powerful enough that", "I am ready for that",
+  "I am prepared for that", "I am equipped for that", "I have decided that",
+  "My firm belief is that", "My unwavering conviction is that", "My deepest knowing is that",
+  "My core truth is that", "My soul's purpose includes that", "My journey involves that",
+  "My life reflects that", "My actions demonstrate that", "My words confirm that",
+  "My thoughts align with that", "My feelings support that", "My energy attracts that",
+  "It is my pleasure that", "It is my honor that", "It is my privilege that",
+  "I fully accept that", "I completely embrace that", "I wholeheartedly believe that",
+  "I unconditionally allow that", "I joyfully receive that", "I consciously create that",
+  "I deliberately manifest that", "I intentionally attract that", "I purposefully align with that",
+  "I actively cultivate that", "I consistently nurture that", "I confidently declare that",
+  "I boldly affirm that", "I courageously embody that", "I gracefully welcome that",
+  "I peacefully accept that", "I lovingly embrace that", "I wisely understand that",
+  "I intuitively know that", "I instinctively feel that", "I clearly perceive that",
+  "I vividly imagine that", "I powerfully intend that", "I resolutely choose that",
+  "I freely permit that", "I openly acknowledge that", "I readily recognize that",
+  "I thankfully appreciate that", "I sincerely value that", "I profoundly trust that",
+  "My reality shifts to include that", "My perspective expands to see that",
+  "My awareness grows to encompass that", "My capacity increases for that",
+  "My potential unfolds into that", "My being evolves towards that", "I am becoming aware that",
+  "I am learning that", "I am discovering that", "I am remembering that",
+  "I am awakening to the fact that", "I am tuning into the reality that",
+  "I am aligning my frequency with that", "I am matching the vibration of that",
+  "I am a magnet for that", "I am a conduit for that", "I am a vessel for that",
+  "I am the creator of the reality that", "I am the source of the experience that",
+  "I am the architect of the truth that", "I am the master of the knowing that",
+  "It feels right that", "It feels true that", "It feels natural that", "It feels good that",
+  "It resonates deeply that", "It makes sense that", "It is logical that",
+  "It is rational that", "It is undeniable that", "It is evident that",
+  "It is apparent that", "It is obvious that", "It is manifest that",
+  "I observe that", "I notice that", "I find that", "I conclude that",
+  "I deduce that", "I infer that", "I gather that", "I assume responsibility for that",
+  "I claim ownership of that", "I step into the power of that", "I rise to meet that",
+  "I merge with that", "I unite with that", "I connect with that",
+  "I am one with that", "I am intertwined with that", "I am inseparable from that",
+  "My foundation includes that", "My structure supports that", "My framework allows that",
+  "My paradigm shifts to that", "My mindset embraces that", "My attitude reflects that",
+  "My outlook is that", "My viewpoint is that", "My standpoint is that",
+  "I operate from the premise that", "I function with the knowledge that",
+  "I proceed with the understanding that", "I move forward believing that",
+  "I live my life knowing that", "I navigate my world accepting that",
+  "I shape my destiny affirming that", "I design my future decreeing that",
+  "I build my reality choosing that", "I paint my canvas envisioning that",
+  "I write my story declaring that", "I sing my song feeling that",
+  "I dance my rhythm embodying that", "I speak my truth knowing that",
+  "I think thoughts aligned with that", "I feel emotions resonant with that",
+  "I take actions inspired by that", "I make choices based on that",
+  "I set my coordinates for that", "I calibrate my energy to that",
+  "I fine-tune my focus on that", "I lock onto the frequency of that",
+  "I anchor into the reality that", "I ground myself in the truth that",
+  "I center myself in the knowing that", "I establish the fact that",
+  "I ordain that", "I sanction that", "I bless that", "I consecrate that",
+  "I dedicate myself to that", "I commit to that", "I pledge that",
+  "I vow that", "I promise myself that", "I guarantee that",
+  "I ensure that", "I make certain that", "I take it as given that",
+  "I presuppose that", "I work with the assumption that", "I count on that",
+  "I depend on the truth that", "I rely on the fact that", "I bank on that",
+  "I wager that", "I bet my bottom dollar that", "I stake my claim that",
+  "I put my energy into that", "I invest my belief in that", "I pour my focus into that",
+  "I channel my intention towards that", "I direct my power to that",
+  "I consent to that", "I agree that", "I concur that", "I assent that",
+  "I give my permission for that", "I grant that", "I yield to that",
+  "I submit to the truth that", "I bow to the reality that", "I respect that",
+  "I admire that", "I adore that", "I cherish that", "I delight in that",
+  "I rejoice in that", "I revel in that", "I bask in the knowing that",
+  "I luxuriate in the feeling that", "I thrive knowing that", "I flourish believing that",
+  "I prosper accepting that", "I succeed because I know that", "I win by embracing that",
+  "My victory is assured that", "My success is inevitable that", "My abundance flows from that",
+  "My well-being depends on that", "My happiness is rooted in that",
+  "My peace comes from knowing that", "My strength is in believing that",
+  "My wisdom includes that", "My clarity confirms that", "My insight reveals that",
+  "My intuition guides me that", "My inner voice whispers that",
+  "My higher self knows that", "The universe conspires that", "Source energy dictates that",
+  "Divine intelligence ensures that", "Infinite possibility includes that",
+  "All creation supports that", "Life itself affirms that", "My very existence proves that",
+  "It is fundamentally true that", "It is essentially so that", "It is intrinsically real that",
+  "It is inherently factual that", "It is axiomatically correct that",
+  "It is self-evident that", "It is universally acknowledged that",
+  "It is commonly understood that", "It is widely accepted that",
+  "It is generally agreed that", "It is standard practice to accept that",
+  "It is the consensus that", "It is the prevailing view that",
+  "It is the established norm that", "It is the way of things that",
+  "It is the nature of reality that", "It is the fabric of existence that",
+  "It is woven into the tapestry that", "It is etched in stone that",
+  "It is imprinted on my soul that", "It is coded in my DNA that",
+  "It is part of my blueprint that", "It is my birthright that",
+  "I was born knowing that", "I came here to experience that",
+  "I am designed to manifest that", "I am wired to create that",
+  "I am destined to embody that", "I am meant to live that",
+  "I am called to express that", "I am guided to share that",
+  "I am inspired to demonstrate that", "I am motivated to prove that",
+  "I am driven to realize that", "I am compelled to accept that",
+  "I am moved to believe that", "I am inclined to trust that",
+  "I am predisposed to know that", "I am naturally aligned with that",
+  "I effortlessly attract that", "I easily manifest that", "I simply allow that",
+  "I gracefully receive that", "I joyfully create that", "I lovingly accept that",
+  "I peacefully know that", "I calmly trust that", "I serenely believe that",
+  "I quietly affirm that", "I silently declare that", "I inwardly accept that",
+  "My inner world reflects that", "My outer world confirms that",
+  "My past prepares me for that", "My present moment contains that",
+  "My future unfolds from that", "Now is the time that", "This moment proves that",
+  "Here and now, I accept that", "In this space, I know that",
+  "With this breath, I affirm that", "My heart beats in rhythm with that",
+  "My mind is clear that", "My body relaxes knowing that", "My energy expands with that",
+  "My vibration rises because", "My frequency attunes to that",
+  "I am in harmony with the truth that", "I am in sync with the reality that",
+  "I am in flow with the knowing that", "I am in alignment with the belief that",
+  "I am in resonance with the acceptance that", "I am in coherence with the fact that"
+  // ... potentially more variations can be generated following these patterns.
+];
+
+        // --- Functions ---
+
+        /**
+         * Shows a temporary message (e.g., for errors) in the acknowledgement area.
+         */
+        function showTemporaryMessage(messageText) {
+            acknowledgementArea.innerHTML = '';
+            const messageElement = document.createElement('p');
+            messageElement.textContent = messageText;
+            messageElement.className = 'text-red-600 font-medium text-center';
+            acknowledgementArea.appendChild(messageElement);
+            ackPlaceholder.style.display = 'none';
+
+             setTimeout(() => {
+                 if (acknowledgementArea.contains(messageElement)) {
+                     acknowledgementArea.removeChild(messageElement);
+                     if (acknowledgementArea.children.length === 0) {
+                          ackPlaceholder.style.display = 'block';
+                          acknowledgementArea.appendChild(ackPlaceholder);
+                     }
+                 }
+             }, 3000);
+        }
+
+        /**
+         * Displays a single UNIQUE affirmation from the 500 list, using localStorage.
+         */
+        function showSingleUniqueAffirmationFromPool() { // Renamed for clarity
+            acknowledgementArea.innerHTML = '';
+            ackPlaceholder.style.display = 'none';
+
+            let availableAffirmations = [];
+            try {
+                const storedAffirmations = localStorage.getItem(AVAILABLE_AFFIRMATIONS_KEY);
+                availableAffirmations = storedAffirmations ? JSON.parse(storedAffirmations) : null;
+                if (!Array.isArray(availableAffirmations)) {
+                    console.warn("Invalid or missing available affirmations pool in storage. Initializing.");
+                    availableAffirmations = [...fullAffirmationPool];
+                    localStorage.setItem(AVAILABLE_AFFIRMATIONS_KEY, JSON.stringify(availableAffirmations));
+                }
+            } catch (error) {
+                console.error("Error reading/parsing available affirmations pool from localStorage:", error);
+                availableAffirmations = [...fullAffirmationPool];
+                localStorage.setItem(AVAILABLE_AFFIRMATIONS_KEY, JSON.stringify(availableAffirmations));
+            }
+
+            if (availableAffirmations.length === 0) {
+                console.log("Affirmation pool empty, resetting.");
+                availableAffirmations = [...fullAffirmationPool];
+            }
+
+            const randomIndex = Math.floor(Math.random() * availableAffirmations.length);
+            const uniqueAffirmation = availableAffirmations[randomIndex];
+            availableAffirmations.splice(randomIndex, 1);
+
+            localStorage.setItem(AVAILABLE_AFFIRMATIONS_KEY, JSON.stringify(availableAffirmations));
+
+            const msgElement = document.createElement('span');
+            msgElement.textContent = uniqueAffirmation;
+            msgElement.className = 'positive-acknowledgement';
+            acknowledgementArea.appendChild(msgElement);
+        }
+
+        /**
+         * Gets a unique personalization prefix, managing state in localStorage robustly.
+         */
+        function getUniquePersonalizationPrefix() {
+            let availablePrefixes = [];
+            try {
+                const storedPrefixes = localStorage.getItem(AVAILABLE_PREFIXES_KEY);
+                availablePrefixes = storedPrefixes ? JSON.parse(storedPrefixes) : null;
+                if (!Array.isArray(availablePrefixes)) {
+                    console.warn("Invalid or missing available prefixes in storage. Initializing.");
+                    availablePrefixes = [...fullPersonalizationPrefixPool];
+                    localStorage.setItem(AVAILABLE_PREFIXES_KEY, JSON.stringify(availablePrefixes));
+                }
+            } catch (error) {
+                console.error("Error reading/parsing available prefixes from localStorage:", error);
+                availablePrefixes = [...fullPersonalizationPrefixPool];
+                localStorage.setItem(AVAILABLE_PREFIXES_KEY, JSON.stringify(availablePrefixes));
+            }
+
+            if (availablePrefixes.length === 0) {
+                console.log("Personalization prefix pool empty, resetting.");
+                availablePrefixes = [...fullPersonalizationPrefixPool];
+            }
+
+            const randomIndex = Math.floor(Math.random() * availablePrefixes.length);
+            const uniquePrefix = availablePrefixes[randomIndex];
+            availablePrefixes.splice(randomIndex, 1);
+
+            localStorage.setItem(AVAILABLE_PREFIXES_KEY, JSON.stringify(availablePrefixes));
+
+            return uniquePrefix;
+        }
+
+
+        /**
+         * Loads user's saved affirmations from local storage and displays them in the feed.
+         */
+        function loadSavedAffirmations() { // Renamed for clarity
+            while (affirmationFeedArea.children.length > 1) {
+                affirmationFeedArea.removeChild(affirmationFeedArea.lastChild);
+            }
+            noAffirmationsMessage.style.display = 'block';
+
+            const affirmations = JSON.parse(localStorage.getItem(AFFIRMATIONS_STORAGE_KEY) || '[]');
+
+            if (affirmations.length > 0) {
+                noAffirmationsMessage.style.display = 'none';
+                affirmations.slice().reverse().forEach(affirmation => {
+                    addAffirmationToFeed(affirmation.id, affirmation.text, false);
+                });
+            }
+             checkEmptyFeed();
+        }
+
+        /**
+         * Adds a single user affirmation (with personalized text) to the top of the feed visually.
+         */
+        function addAffirmationToFeed(id, personalizedText, animate = true) {
+            const sanitizedText = personalizedText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            const affirmationElement = document.createElement('div');
+            affirmationElement.className = 'affirmation-item bg-white p-4 rounded-lg shadow-sm flex justify-between items-start';
+            affirmationElement.setAttribute('data-id', id);
+
+            if (animate) {
+                 affirmationElement.style.animation = 'fadeInItem 0.5s ease-out forwards';
+            }
+
+            const textElement = document.createElement('p');
+            textElement.className = 'text-gray-700 leading-relaxed mr-2 flex-grow';
+            textElement.innerHTML = sanitizedText;
+
+            const removeButton = document.createElement('button');
+            removeButton.className = 'remove-btn text-red-500 hover:text-red-700 font-medium border border-red-300 rounded whitespace-nowrap';
+            removeButton.textContent = 'Remove';
+            removeButton.onclick = () => removeSavedAffirmation(id); // Renamed for clarity
+
+            affirmationElement.appendChild(textElement);
+            affirmationElement.appendChild(removeButton);
+
+            affirmationFeedArea.insertBefore(affirmationElement, noAffirmationsMessage.nextSibling);
+             checkEmptyFeed();
+        }
+
+         /**
+         * Removes a user's saved affirmation from the DOM and local storage.
+         */
+        function removeSavedAffirmation(id) { // Renamed for clarity
+            const elementToRemove = affirmationFeedArea.querySelector(`div[data-id="${id}"]`);
+            if (elementToRemove) {
+                elementToRemove.remove();
+            }
+
+            let affirmations = JSON.parse(localStorage.getItem(AFFIRMATIONS_STORAGE_KEY) || '[]');
+            affirmations = affirmations.filter(affirmation => affirmation.id !== id);
+            localStorage.setItem(AFFIRMATIONS_STORAGE_KEY, JSON.stringify(affirmations));
+
+            checkEmptyFeed();
+        }
+
+        /**
+         * Checks if the feed of saved affirmations is empty and toggles the placeholder message.
+         */
+        function checkEmptyFeed() {
+            const affirmationCount = affirmationFeedArea.querySelectorAll('.affirmation-item').length;
+            if (affirmationCount === 0) {
+                noAffirmationsMessage.style.display = 'block';
+            } else {
+                noAffirmationsMessage.style.display = 'none';
+            }
+        }
+
+         /**
+         * Saves a new user affirmation object (with personalized text) to local storage.
+         */
+        function saveUserAffirmation(affirmation) { // Renamed for clarity
+            let affirmations = JSON.parse(localStorage.getItem(AFFIRMATIONS_STORAGE_KEY) || '[]');
+            affirmations.push(affirmation);
+            const MAX_AFFIRMATIONS = 100;
+            if (affirmations.length > MAX_AFFIRMATIONS) {
+                 affirmations = affirmations.slice(affirmations.length - MAX_AFFIRMATIONS);
+                 console.warn(`Saved affirmation limit (${MAX_AFFIRMATIONS}) reached. Removed oldest affirmations.`);
+            }
+            localStorage.setItem(AFFIRMATIONS_STORAGE_KEY, JSON.stringify(affirmations));
+        }
+
+
+        // --- Event Listeners ---
+
+        /**
+         * Handles the affirm button click.
+         */
+        affirmButton.addEventListener('click', () => {
+            const originalAffirmationText = affirmationInput.value.trim();
+
+            if (originalAffirmationText) {
+                affirmButton.disabled = true;
+                affirmButton.classList.add('opacity-75', 'cursor-not-allowed');
+
+                // --- Personalization Step ---
+                const prefix = getUniquePersonalizationPrefix(); // Get unique prefix
+
+                let affirmationBody = originalAffirmationText;
+                if (affirmationBody.charAt(0) === affirmationBody.charAt(0).toUpperCase() && affirmationBody.charAt(0) !== 'I' && affirmationBody.charAt(0).match(/[a-z]/i)) {
+                     affirmationBody = affirmationBody.charAt(0).toLowerCase() + affirmationBody.slice(1);
+                }
+                if (affirmationBody.endsWith('.')) {
+                    affirmationBody = affirmationBody.slice(0, -1);
+                }
+                const personalizedText = `${prefix} ${affirmationBody}.`;
+                // --- End Personalization Step ---
+
+
+                const newUserAffirmation = { // Renamed for clarity
+                    id: `affirm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+                    text: personalizedText
+                };
+
+                // Save and display the user's personalized affirmation
+                saveUserAffirmation(newUserAffirmation);
+                addAffirmationToFeed(newUserAffirmation.id, newUserAffirmation.text, true);
+
+                // Show a unique affirmation from the 500 pool in the acknowledgement area
+                showSingleUniqueAffirmationFromPool();
+
+                affirmationInput.value = '';
+
+                 setTimeout(() => {
+                    affirmButton.disabled = false;
+                    affirmButton.classList.remove('opacity-75', 'cursor-not-allowed');
+                }, 300);
+
+            } else {
+                showTemporaryMessage('Please type an affirmation!');
+            }
+        });
+
+        /**
+         * Allows submitting with Enter key in the textarea.
+         */
+        affirmationInput.addEventListener('keydown', (event) => {
+             if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                if (affirmationInput.value.trim() && !affirmButton.disabled) {
+                    affirmButton.click();
+                }
+            }
+        });
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+             loadSavedAffirmations(); // Load user's saved affirmations
+             // Ensure acknowledgement placeholder is correct on load
+             if (!acknowledgementArea.querySelector('.positive-acknowledgement')) {
+                 ackPlaceholder.style.display = 'block';
+             } else {
+                 ackPlaceholder.style.display = 'none';
+             }
+        });
+
+    </script>
+
+</body>
+</html>
