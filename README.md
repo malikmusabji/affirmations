@@ -1,0 +1,2 @@
+# affirmations
+everyday affirmations
